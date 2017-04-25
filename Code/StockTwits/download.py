@@ -2,14 +2,17 @@
 import urllib.request, json
 import os
 import sys
+import datetime
 
+today=datetime.datetime.today().strftime('%Y%m%d')
+seq=datetime.datetime.today().strftime('%H%M%S')
 pwd=os.getcwd()
-file=pwd+"\\data\\Tweets.20170424.csv"
+file=pwd+"\\data\\Tweets."+today+"."+seq+".csv"
 writer = open(file, 'w')
 writer.write('ID,Symbol,CreateTime,Body,Sentiment\n')
 
-stocks=["AAPL", "TSLA", "FB", "TWTR"]
-#stocks=["AAPL"]
+#stocks=["AAPL", "TSLA", "FB", "TWTR"]
+stocks=["AAPL"]
 rows=0
 
 try:
