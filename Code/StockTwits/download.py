@@ -18,6 +18,7 @@ writer.write('ID,Symbol,CreateTime,Body,Sentiment\n')
 stocks=["AAPL", "TSLA", "FB", "TWTR"]
 #stocks=["AAPL"]
 rows=0
+batches=50
 
 try:
     for stock in stocks:
@@ -32,7 +33,7 @@ try:
             since=cursor['since']
             maxid=cursor['max']
             iter=0
-            while more and iter < 48:
+            while more and iter < batches:
                 #time.sleep(1) #sec
                 print('iteration:{0} {1},{2},{3},{4}'.format(iter, stock, more, since, maxid))
                 url="https://api.stocktwits.com/api/2/streams/symbol/"+stock+".json?max="+str(maxid)
