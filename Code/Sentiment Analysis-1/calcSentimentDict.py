@@ -1,51 +1,54 @@
 import pandas as pd
 import re
-from sklearn.metrics import confusion_matrix
-import matplotlib.pyplot as plt
+import Preprocess as pp
 
-# read in twitter data and sentiment dictionary from files
-data_path = 'H:/Course Docs/Big Data/Final Project/StockTwits.20170425.131745.csv'
+# read in sentiment dictionary from files
+tickers = ['AAPL', 'FB', 'TSLA']
+data_paths = ['H:/Course Docs/Big Data/Final Project/AAPL.20170430.191643.csv',
+              'H:/Course Docs/Big Data/Final Project/FB.20170502.024702.csv',
+              'H:/Course Docs/Big Data/Final Project/TSLA.20170501.033001.csv',
+              ]
+
+export_path1 = 'H:/Course Docs/Big Data/Final Project/dict_output_simple.'
+export_path2 = 'H:/Course Docs/Big Data/Final Project/dict_output_weighted.'
 dict_path = 'H:/Course Docs/Big Data/Final Project/LoughranMcDonald_MasterDictionary_2014.xlsx'
-export_path = 'H:/Course Docs/Big Data/Final Project/output.csv'
-df_data = pd.read_csv(data_path)
 df_dict = pd.read_excel(dict_path)
 
 # create positive and negative dictionaries
 fin_pos = df_dict['Word'][df_dict['Positive'] != 0].tolist()
 fin_neg = df_dict['Word'][df_dict['Negative'] != 0].tolist()
 
-# compute sentiment (bullish/bearish) for each twitter using dictionary
-messages_list = df_data.Body.tolist()
-dict_scores = []
-for message in messages_list:
-    letters_only = re.sub("[^a-zA-Z]",  " ",  message)
-    letters_only = letters_only.upper()
-    words = letters_only.split()
-    pos_score = sum([(word in fin_pos) for word in words])
-    neg_score = sum([(word in fin_neg) for word in words])
-    if pos_score - neg_score < 0:
-        dict_scores.append('Bearish')
-    elif pos_score - neg_score > 0:
-        dict_scores.append('Bullish')
-    else:
-        dict_scores.append('None')
+# read in data from files
+for ticker, data_path in zip(tickers, data_paths):
+    df_data = pd.read_csv(data_path)
 
-# TODO: apply tf.idf to give proper weight to each word
+    # clean up data
+    # dedupe important since alot of the tweets only differed by url's and RT mentions
+    df_data.drop_duplicates(subset=['Body', 'Sentiment'], inplace=1)
+    # remove stop words to reduce dimensionality
+    df_data["stop_text"] = df_data["Body"].apply(pp.remove_stops)
+    # remove other non essential words, think of it as my personal stop word list
+    df_data["feat_text"] = df_data["stop_text"].apply(pp.remove_features)
+    # tag the words remaining and keep only Nouns, Verbs and Adjectives
+    df_data["tagged_text"] = df_data["feat_text"].apply(pp.tag_and_remove)
+    # lemmatization of remaining words to reduce dimensionality & boost measures
+    df_data["text"] = df_data["tagged_text"].apply(pp.lemmatize)
 
-# write to file
-act_scores = df_data['Sentiment'].tolist()
-output = pd.DataFrame({'Predicted': dict_scores, 'Actual': act_scores, 'Message': messages_list})
-output.to_csv(export_path, index=False)
+    def calc_score(message):
+        words = message.upper().split()
+        pos_count = sum([(word in fin_pos) for word in words])
+        neg_count = sum([(word in fin_neg) for word in words])
+        if pos_count + neg_count <> 0:
+            return (pos_count - neg_count) / (pos_count + neg_count)
+        else:
+            return 0
 
-# plot confusion matrix
-cnf_matrix = confusion_matrix(y_true=act_scores, y_pred=dict_scores, labels=['Bearish', 'Bullish', 'None'])
-plt.imshow(cnf_matrix, cmap='binary', interpolation='None')
-plt.show()
+    df_data['sentiment_score'] = df_data['text'].apply(calc_score)
+    x = df_data[['Date', 'sentiment_score']].groupby(['Date'])
 
-# create data summary table
-table_totals = pd.crosstab(pd.Series(act_scores), pd.Series(dict_scores), rownames=['True'], colnames=['Predicted'], margins=True)
-pd.options.display.float_format = '{:.2f}'.format
-table_perc = pd.crosstab(pd.Series(act_scores), pd.Series(dict_scores), rownames=['True'], colnames=['Predicted']).apply(lambda r: r/r.sum(), axis=1)
-print table_totals
-print table_perc
+    simple_agg = x.sum() / x.count()
+    simple_agg.to_csv(export_path1+ticker+'.csv', index=True)
 
+    tweet_magnitude = x.count() / len(df_data)
+    weighted_agg = simple_agg * (tweet_magnitude / 0.022)
+    weighted_agg.to_csv(export_path2+ticker+'.csv', index=True)
