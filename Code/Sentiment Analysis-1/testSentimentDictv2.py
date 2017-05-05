@@ -1,14 +1,13 @@
 import pandas as pd
-import re
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 import Preprocess as pp
 
 
 # read in twitter data and sentiment dictionary from files
-data_path = 'H:/Course Docs/Big Data/Final Project/StockTwits.20170425.131745.csv'
-dict_path = 'H:/Course Docs/Big Data/Final Project/LoughranMcDonald_MasterDictionary_2014.xlsx'
-export_path = 'H:/Course Docs/Big Data/Final Project/test_dict_outputv2.csv'
+data_path = 'H:/Course Docs/Big Data/Final Project/Data/StockTwits/StockTwits.20170425.131745.csv'
+dict_path = 'H:/Course Docs/Big Data/Final Project/Docs/LoughranMcDonald_MasterDictionary_2014.xlsx'
+export_path = 'H:/Course Docs/Big Data/Final Project/Results/Sentiment Analysis-1/test_dict_outputv2.csv'
 df_data = pd.read_csv(data_path)
 df_dict = pd.read_excel(dict_path)
 

@@ -4,9 +4,9 @@ from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 
 # read in twitter data and sentiment dictionary from files
-data_path = 'H:/Course Docs/Big Data/Final Project/StockTwits.20170425.131745.csv'
-dict_path = 'H:/Course Docs/Big Data/Final Project/LoughranMcDonald_MasterDictionary_2014.xlsx'
-export_path = 'H:/Course Docs/Big Data/Final Project/test_dict_output.csv'
+data_path = 'H:/Course Docs/Big Data/Final Project/Data/StockTwits/StockTwits.20170425.131745.csv'
+dict_path = 'H:/Course Docs/Big Data/Final Project/Docs/LoughranMcDonald_MasterDictionary_2014.xlsx'
+export_path = 'H:/Course Docs/Big Data/Final Project/Results/Sentiment Analysis-1/test_dict_output.csv'
 df_data = pd.read_csv(data_path)
 df_dict = pd.read_excel(dict_path)
 
@@ -29,8 +29,6 @@ for message in messages_list:
         dict_scores.append('Bullish')
     else:
         dict_scores.append('None')
-
-# TODO: apply tf.idf to give proper weight to each word
 
 # write to file
 act_scores = df_data['Sentiment'].tolist()
