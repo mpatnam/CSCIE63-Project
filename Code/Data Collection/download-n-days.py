@@ -13,11 +13,11 @@ seq=datetime.today().strftime('%H%M%S')
 data_dir="C:\\Users\\mpatnam\\Documents\\GitHub\\CSCIE63\\CSCIE63-Big-Data-Analytics\\Project\\CSCIE63-Project\\Data"
 
 #stocks=["AAPL", "TSLA", "FB", "TWTR"]
-stocks=["AAPL"]
+stocks=["TWTR"]
 
 # Download control parameters
 #tot_batches=3
-tot_days=60               # desired days       
+tot_days=63               # desired days       
 max_requests_per_hour=200 #StockTwits limit
 sleep_time=60*60          #sec
 progress_output_rows=30   #rows
