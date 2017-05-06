@@ -3,7 +3,7 @@ from datetime import datetime
 from datetime import timedelta
 import pandas as pd
 
-export_path = 'H:/Course Docs/Big Data/Final Project/'
+export_path = 'H:/Course Docs/Big Data/Final Project/Data/IntradayPrices/'
 
 bbg = pybbg.Pybbg()
 bbg.service_refData()
