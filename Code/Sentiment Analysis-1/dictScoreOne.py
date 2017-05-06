@@ -1,11 +1,8 @@
 import pandas as pd
-import re
-from sklearn.metrics import confusion_matrix
-import matplotlib.pyplot as plt
 import Preprocess as pp
 
 
-# calculate the signal score from text in cleaned message
+# calculates a sentiment score between -1 and +1 based on counting words in positive and negative financial dictionary
 def calc_score(message):
     words = message.upper().split()
     pos_count = sum([(word in fin_pos) for word in words])
@@ -48,7 +45,7 @@ df_data[['ID', 'Symbol', 'Date', 'CreateTime', 'Body', 'Sentiment', 'text', 'Sco
 
 simple_agg = x.sum() / x.count()
 tweet_magnitude = x.count() / original_count
-weighted_agg = simple_agg * (tweet_magnitude / 0.022)
+weighted_agg = x.sum() * (tweet_magnitude / 0.022)
 print 'Simple Agg = Sum(Scores_d) / Count(Scores_d)'
 print simple_agg.values[0][0]
 print 'Tweet Magnitude = Count(Scores_d) / Count(Scores_all)'
