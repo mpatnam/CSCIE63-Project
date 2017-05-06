@@ -7,7 +7,7 @@ export_path = 'H:/Course Docs/Big Data/Final Project/'
 
 bbg = pybbg.Pybbg()
 bbg.service_refData()
-tickers = ['AAPL', 'FB', 'TWTR', 'TSLA']
+tickers = ['AAPL', 'FB', 'TSLA']
 fld_list = ['open', 'high', 'low', 'close', 'volume']
 
 end_date = datetime(datetime.today().year, datetime.today().month, datetime.today().day) + timedelta(days=-1)
