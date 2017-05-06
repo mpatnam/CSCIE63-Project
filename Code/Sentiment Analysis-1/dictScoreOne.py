@@ -31,9 +31,6 @@ fin_pos = df_dict['Word'][df_dict['Positive'] != 0].tolist()
 fin_neg = df_dict['Word'][df_dict['Negative'] != 0].tolist()
 
 # clean up data
-# TODO: How should we treat re-tweets?
-# dedupe important since alot of the tweets only differed by url's and RT mentions
-#df_data.drop_duplicates(subset=['Body', 'Sentiment', 'Date'], inplace=1)
 # remove stop words to reduce dimensionality
 df_data["stop_text"] = df_data["Body"].apply(pp.remove_stops)
 # remove other non essential words, think of it as my personal stop word list

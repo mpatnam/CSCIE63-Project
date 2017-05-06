@@ -31,8 +31,6 @@ for ticker, data_path in zip(tickers, data_paths):
     df_data = pd.read_csv(data_path)
 
     # clean up data
-    # dedupe important since alot of the tweets only differed by url's and RT mentions
-    #df_data.drop_duplicates(subset=['Body', 'Sentiment', 'Date'], inplace=1)
     # remove stop words to reduce dimensionality
     df_data["stop_text"] = df_data["Body"].apply(pp.remove_stops)
     # remove other non essential words, think of it as my personal stop word list
