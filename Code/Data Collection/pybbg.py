@@ -1,5 +1,4 @@
 # Adapted code from github.com/kyuni22/pybbg
-
 from __future__ import print_function
 import blpapi
 from collections import defaultdict
@@ -52,7 +51,7 @@ class Pybbg():
     def bdib(self, ticker, fld_list, startDateTime, endDateTime, eventType='TRADE', interval=1):
         """
         Get one ticker (Only one ticker available per call); eventType (TRADE, BID, ASK,..etc); interval (in minutes)
-                ; fld_list (Only [open, high, low, close, volumne, numEvents] availalbe)
+                ; fld_list (Only [open, high, low, close, volumne, numEvents] available)
         return pandas dataframe with return Data
         """
         self.service_refData()
@@ -64,10 +63,8 @@ class Pybbg():
         request.set("startDateTime", startDateTime)
         request.set("endDateTime", endDateTime)
 
-        # print "Sending Request:", request
         # Send the request
         self.session.sendRequest(request)
-        # defaultdict - later convert to pandas
         data = defaultdict(dict)
         # Process received events
         while True:

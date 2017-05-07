@@ -1,11 +1,10 @@
 import pandas as pd
-import re
-from sklearn.metrics import confusion_matrix
-import matplotlib.pyplot as plt
 import Preprocess as pp
 
+DICTIONARY = 'Harvard'
 
-# calculate the signal score from text in cleaned message
+
+# calculates a sentiment score between -1 and +1 based on counting words in positive and negative financial dictionary
 def calc_score(message):
     words = message.upper().split()
     pos_count = sum([(word in fin_pos) for word in words])
@@ -17,18 +16,28 @@ def calc_score(message):
 
 # read in twitter data and sentiment dictionary from files
 data_path = 'H:/Course Docs/Big Data/Final Project/Data/StockTwits/AAPL.20170430.191643.csv'
-dict_path = 'H:/Course Docs/Big Data/Final Project/Docs/LoughranMcDonald_MasterDictionary_2014.xlsx'
 export_path = 'H:/Course Docs/Big Data/Final Project/Results/Sentiment Analysis-1/test_dict_one_output.csv'
 df_data = pd.read_csv(data_path)
-df_dict = pd.read_excel(dict_path)
 original_count = len(df_data)
+
+if DICTIONARY == 'Financial':
+    # use financial dictionary
+    dict_path = 'H:/Course Docs/Big Data/Final Project/Docs/LoughranMcDonald_MasterDictionary_2014.xlsx'
+    df_dict = pd.read_excel(dict_path)
+    fin_pos = df_dict['Word'][df_dict['Positive'] != 0].tolist()
+    fin_neg = df_dict['Word'][df_dict['Negative'] != 0].tolist()
+
+elif DICTIONARY == 'Harvard':
+    # use harvard dictionary
+    dict_path = 'H:/Course Docs/Big Data/Final Project/Docs/inquirerbasic.xls'
+    df_dict = pd.read_excel(dict_path)
+    fin_pos = df_dict[df_dict['Positiv'] == 'Positiv'].index.tolist()
+    fin_neg = df_dict[df_dict['Negativ'] == 'Negativ'].index.tolist()
+else:
+    print 'Error: Improper dictionary chosen.'
 
 # use only AAPL March 28th
 df_data = df_data[(df_data['Date'] == '2017-03-28')]
-
-# create positive and negative dictionaries
-fin_pos = df_dict['Word'][df_dict['Positive'] != 0].tolist()
-fin_neg = df_dict['Word'][df_dict['Negative'] != 0].tolist()
 
 # clean up data
 # remove stop words to reduce dimensionality
@@ -48,10 +57,10 @@ df_data[['ID', 'Symbol', 'Date', 'CreateTime', 'Body', 'Sentiment', 'text', 'Sco
 
 simple_agg = x.sum() / x.count()
 tweet_magnitude = x.count() / original_count
-weighted_agg = simple_agg * (tweet_magnitude / 0.022)
+weighted_agg = x.sum() * (tweet_magnitude / 0.022)
 print 'Simple Agg = Sum(Scores_d) / Count(Scores_d)'
 print simple_agg.values[0][0]
 print 'Tweet Magnitude = Count(Scores_d) / Count(Scores_all)'
 print tweet_magnitude.values[0][0]
-print 'Weighted Agg = Simple Agg * Tweet Magnitude / 0.022'
+print 'Weighted Agg = Sum(Scores_d) * Tweet Magnitude / 0.022'
 print weighted_agg.values[0][0]

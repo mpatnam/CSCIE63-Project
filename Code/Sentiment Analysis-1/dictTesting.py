@@ -5,6 +5,9 @@ import Preprocess as pp
 import itertools
 import numpy as np
 
+# Set dictionary to 'Harvard' or 'Financial'
+DICTIONARY = 'Harvard'
+
 
 def plot_confusion_matrix(cm, classes,
                           normalize=False,
@@ -52,13 +55,24 @@ def calc_sentiment(message):
 data_paths = ['H:/Course Docs/Big Data/Final Project/Data/StockTwits/AAPL.20170430.191643.csv',
               'H:/Course Docs/Big Data/Final Project/Data/StockTwits/FB.20170502.024702.csv',
               'H:/Course Docs/Big Data/Final Project/Data/StockTwits/TSLA.20170501.033001.csv']
-dict_path = 'H:/Course Docs/Big Data/Final Project/Docs/LoughranMcDonald_MasterDictionary_2014.xlsx'
 export_path = 'H:/Course Docs/Big Data/Final Project/Results/Sentiment Analysis-1/test_dict_output.csv'
-df_dict = pd.read_excel(dict_path)
 
-# create positive and negative dictionaries
-fin_pos = df_dict['Word'][df_dict['Positive'] != 0].tolist()
-fin_neg = df_dict['Word'][df_dict['Negative'] != 0].tolist()
+if DICTIONARY == 'Financial':
+    # use financial dictionary
+    dict_path = 'H:/Course Docs/Big Data/Final Project/Docs/LoughranMcDonald_MasterDictionary_2014.xlsx'
+    df_dict = pd.read_excel(dict_path)
+    fin_pos = df_dict['Word'][df_dict['Positive'] != 0].tolist()
+    fin_neg = df_dict['Word'][df_dict['Negative'] != 0].tolist()
+
+elif DICTIONARY == 'Harvard':
+    # use harvard dictionary
+    dict_path = 'H:/Course Docs/Big Data/Final Project/Docs/inquirerbasic.xls'
+    df_dict = pd.read_excel(dict_path)
+    fin_pos = df_dict[df_dict['Positiv'] == 'Positiv'].index.tolist()
+    fin_neg = df_dict[df_dict['Negativ'] == 'Negativ'].index.tolist()
+else:
+    print 'Error: Improper dictionary chosen.'
+
 
 df_data = pd.DataFrame()
 for data_path in data_paths:
@@ -80,44 +94,31 @@ df_data["text"] = df_data["tagged_text"].apply(pp.lemmatize)
 # select only the columns we care about
 df_data = df_data[['ID', 'Symbol', 'text', 'Sentiment']]
 
+# calculate sentiment prediction using dictionary
 df_data['Prediction'] = df_data['text'].apply(calc_sentiment)
 
+# summarize tweet counts
 print 'Total '+str(len(df_data))+' tweets'
 print 'Actual None: '+str(len(df_data[df_data['Sentiment'] == 'None']))+' tweets'
 print 'Predict None: '+str(len(df_data[df_data['Prediction'] == 'None']))+' tweets'
 print 'Either None: '+str(len(df_data[((df_data['Sentiment'] == 'None')|(df_data['Prediction'] == 'None'))]))+' tweets'
 
 # write to file
-#act_scores = df_data['Sentiment'].tolist()
-#dict_scores = df_data['Prediction'].tolist()
-#messages_list = df_data['text'].tolist()
 act_scores = df_data[((df_data['Sentiment'] != 'None')&(df_data['Prediction'] != 'None'))]['Sentiment'].tolist()
 dict_scores = df_data[((df_data['Sentiment'] != 'None')&(df_data['Prediction'] != 'None'))]['Prediction'].tolist()
 messages_list = df_data[((df_data['Sentiment'] != 'None')&(df_data['Prediction'] != 'None'))]['text'].tolist()
-
-
 output = pd.DataFrame({'Predicted': dict_scores, 'Actual': act_scores, 'Tweet': messages_list})
 output[['Predicted', 'Actual', 'Tweet']].to_csv(export_path, index=False)
 
 # create data summary table
-#table_totals = pd.crosstab(pd.Series(act_scores), pd.Series(dict_scores), rownames=['True'], colnames=['Predicted'], margins=True)
-#pd.options.display.float_format = '{:.2f}'.format
-#table_perc = pd.crosstab(pd.Series(act_scores), pd.Series(dict_scores), rownames=['True'], colnames=['Predicted']).apply(lambda r: r/r.sum(), axis=1)
-#print table_totals
-#print table_perc
+table_totals = pd.crosstab(pd.Series(act_scores), pd.Series(dict_scores), rownames=['True'], colnames=['Predicted'], margins=True)
+pd.options.display.float_format = '{:.2f}'.format
+table_perc = pd.crosstab(pd.Series(act_scores), pd.Series(dict_scores), rownames=['True'], colnames=['Predicted']).apply(lambda r: r/r.sum(), axis=1)
+print table_totals
+print table_perc
 
-
-# Convert Dataframe to Numpy Array
-#testLabels = np.array(test.select('label').collect())
-#testPreds = np.array(prediction_df.select('prediction').collect())
-
-# Compute confusion matrix
-#cnf_matrix = confusion_matrix(testLabels, testPreds)
+# Compute and plot confusion matrix
 cnf_matrix = confusion_matrix(y_true=act_scores, y_pred=dict_scores)
-print(cnf_matrix.astype('float') / cnf_matrix.sum(axis=1)[:, np.newaxis])
-np.set_printoptions(precision=2)
-
-# Plot confusion matrix
 plt.figure()
 plot_confusion_matrix(cnf_matrix, classes=['Bearish', 'Bullish'], title='Confusion Matrix', normalize=True)
 plt.show()

@@ -1,7 +1,11 @@
 import pandas as pd
 import Preprocess as pp
 
+# Set dictionary to 'Harvard' or 'Financial'
+DICTIONARY = 'Harvard'
 
+
+# calculates a sentiment score between -1 and +1 based on counting words in positive and negative financial dictionary
 def calc_score(message):
     words = message.upper().split()
     pos_count = sum([(word in fin_pos) for word in words])
@@ -18,13 +22,22 @@ data_paths = ['H:/Course Docs/Big Data/Final Project/Data/StockTwits/AAPL.201704
               'H:/Course Docs/Big Data/Final Project/Data/StockTwits/TSLA.20170501.033001.csv']
 export_path1 = 'H:/Course Docs/Big Data/Final Project/Results/Sentiment Analysis-1/dict_output_simple.'
 export_path2 = 'H:/Course Docs/Big Data/Final Project/Results/Sentiment Analysis-1/dict_output_weighted.'
-dict_path = 'H:/Course Docs/Big Data/Final Project/Docs/LoughranMcDonald_MasterDictionary_2014.xlsx'
-df_dict = pd.read_excel(dict_path)
 
+if DICTIONARY == 'Financial':
+    # use financial dictionary
+    dict_path = 'H:/Course Docs/Big Data/Final Project/Docs/LoughranMcDonald_MasterDictionary_2014.xlsx'
+    df_dict = pd.read_excel(dict_path)
+    fin_pos = df_dict['Word'][df_dict['Positive'] != 0].tolist()
+    fin_neg = df_dict['Word'][df_dict['Negative'] != 0].tolist()
 
-# create positive and negative dictionaries
-fin_pos = df_dict['Word'][df_dict['Positive'] != 0].tolist()
-fin_neg = df_dict['Word'][df_dict['Negative'] != 0].tolist()
+elif DICTIONARY == 'Harvard':
+    # use harvard dictionary
+    dict_path = 'H:/Course Docs/Big Data/Final Project/Docs/inquirerbasic.xls'
+    df_dict = pd.read_excel(dict_path)
+    fin_pos = df_dict[df_dict['Positiv'] == 'Positiv'].index.tolist()
+    fin_neg = df_dict[df_dict['Negativ'] == 'Negativ'].index.tolist()
+else:
+    print 'Error: Improper dictionary chosen.'
 
 # read in data from files
 for ticker, data_path in zip(tickers, data_paths):
@@ -40,11 +53,12 @@ for ticker, data_path in zip(tickers, data_paths):
     # lemmatization of remaining words to reduce dimensionality & boost measures
     df_data["text"] = df_data["tagged_text"].apply(pp.lemmatize)
 
+    # calculate sentiment score using dictionary
     df_data['sentiment_score'] = df_data['text'].apply(calc_score)
     x = df_data[['Date', 'sentiment_score']].groupby(['Date'])
     simple_agg = x.sum() / x.count()
-    simple_agg.to_csv(export_path1+ticker+'.csv', index=True)
+    simple_agg.to_csv(export_path1+ticker+'.'+DICTIONARY+'.csv', index=True)
 
     tweet_magnitude = x.count() / len(df_data)
-    weighted_agg = simple_agg * (tweet_magnitude / 0.022)
-    weighted_agg.to_csv(export_path2+ticker+'.csv', index=True)
+    weighted_agg = x.sum() * (tweet_magnitude / 0.022)
+    weighted_agg.to_csv(export_path2+ticker+'.'+DICTIONARY+'.csv', index=True)
