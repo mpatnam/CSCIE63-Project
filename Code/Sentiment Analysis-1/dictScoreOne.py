@@ -56,11 +56,8 @@ x = df_data[['Date', 'Score']].groupby(['Date'])
 df_data[['ID', 'Symbol', 'Date', 'CreateTime', 'Body', 'Sentiment', 'text', 'Score']].to_csv(export_path, index=False)
 
 simple_agg = x.sum() / x.count()
-tweet_magnitude = x.count() / original_count
-weighted_agg = x.sum() * (tweet_magnitude / 0.022)
+weighted_agg = x.sum() / (len(df_data)/len(x))
 print 'Simple Agg = Sum(Scores_d) / Count(Scores_d)'
 print simple_agg.values[0][0]
-print 'Tweet Magnitude = Count(Scores_d) / Count(Scores_all)'
-print tweet_magnitude.values[0][0]
-print 'Weighted Agg = Sum(Scores_d) * Tweet Magnitude / 0.022'
+print 'Weighted Agg = Sum(Scores_d) * / (Count(TweetsAllDays)/Count(Days))'
 print weighted_agg.values[0][0]

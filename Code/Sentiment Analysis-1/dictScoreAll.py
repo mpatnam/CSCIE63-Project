@@ -2,7 +2,7 @@ import pandas as pd
 import Preprocess as pp
 
 # Set dictionary to 'Harvard' or 'Financial'
-DICTIONARY = 'Harvard'
+DICTIONARY = 'Financial'
 
 
 # calculates a sentiment score between -1 and +1 based on counting words in positive and negative financial dictionary
@@ -59,6 +59,5 @@ for ticker, data_path in zip(tickers, data_paths):
     simple_agg = x.sum() / x.count()
     simple_agg.to_csv(export_path1+ticker+'.'+DICTIONARY+'.csv', index=True)
 
-    tweet_magnitude = x.count() / len(df_data)
-    weighted_agg = x.sum() * (tweet_magnitude / 0.022)
+    weighted_agg = x.sum() / (len(df_data)/len(x))
     weighted_agg.to_csv(export_path2+ticker+'.'+DICTIONARY+'.csv', index=True)
