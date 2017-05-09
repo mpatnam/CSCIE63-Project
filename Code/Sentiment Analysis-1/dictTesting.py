@@ -5,30 +5,30 @@ import Preprocess as pp
 import itertools
 import numpy as np
 
-# Set dictionary to 'Harvard' or 'Financial'
-DICTIONARY = 'Harvard'
+# dictionary setting can either be 'Harvard' or 'Financial'
+DICTIONARY = 'Financial'
 
 
+# prints and plots the confusion matrix; normalization can be applied by setting `normalize=True`.
 def plot_confusion_matrix(cm, classes,
                           normalize=False,
                           title='Confusion matrix',
                           cmap=plt.cm.Blues):
-    """
-    This function prints and plots the confusion matrix.
-    Normalization can be applied by setting `normalize=True`.
-    """
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title)
     plt.colorbar()
+    # set ticks
     tick_marks = np.arange(len(classes))
     plt.xticks(tick_marks, classes, rotation=45)
     plt.yticks(tick_marks, classes)
+    # handle normalization
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
         print("Normalized confusion matrix")
     else:
         print('Confusion matrix, without normalization')
     print(cm)
+    # add labels
     thresh = cm.max() / 2.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         plt.text(j, i, cm[i, j],
@@ -39,11 +39,14 @@ def plot_confusion_matrix(cm, classes,
     plt.xlabel('Predicted label')
 
 
-# calculate the signal from text in cleaned message
+# calculate if message is bearish or bullish or neutral
 def calc_sentiment(message):
+    # make all letters upper case and split into words
     words = message.upper().split()
+    # tabulate positive and negative word counts
     pos_count = sum([(word in fin_pos) for word in words])
     neg_count = sum([(word in fin_neg) for word in words])
+    # return sentiment
     if pos_count > neg_count:
         return 'Bullish'
     elif neg_count > pos_count:
@@ -55,6 +58,7 @@ def calc_sentiment(message):
 data_paths = ['H:/Course Docs/Big Data/Final Project/Data/StockTwits/AAPL.20170430.191643.csv',
               'H:/Course Docs/Big Data/Final Project/Data/StockTwits/FB.20170502.024702.csv',
               'H:/Course Docs/Big Data/Final Project/Data/StockTwits/TSLA.20170501.033001.csv']
+# define export file path
 export_path = 'H:/Course Docs/Big Data/Final Project/Results/Sentiment Analysis-1/test_dict_output.csv'
 
 if DICTIONARY == 'Financial':
@@ -71,9 +75,9 @@ elif DICTIONARY == 'Harvard':
     fin_pos = df_dict[df_dict['Positiv'] == 'Positiv'].index.tolist()
     fin_neg = df_dict[df_dict['Negativ'] == 'Negativ'].index.tolist()
 else:
-    print 'Error: Improper dictionary chosen.'
+    raise Exception('Error: Improper dictionary chosen.')
 
-
+# combine all raw data into one dataframe
 df_data = pd.DataFrame()
 for data_path in data_paths:
     if len(df_data) == 0:
@@ -82,7 +86,7 @@ for data_path in data_paths:
         df_newfile = pd.read_csv(data_path)
         df_data = pd.concat([df_data, df_newfile])
 
-# clean up data
+# clean up messages using nltk
 # remove stop words to reduce dimensionality
 df_data["stop_text"] = df_data["Body"].apply(pp.remove_stops)
 # remove other non essential words, think of it as my personal stop word list
@@ -111,13 +115,15 @@ output = pd.DataFrame({'Predicted': dict_scores, 'Actual': act_scores, 'Tweet': 
 output[['Predicted', 'Actual', 'Tweet']].to_csv(export_path, index=False)
 
 # create data summary table
-table_totals = pd.crosstab(pd.Series(act_scores), pd.Series(dict_scores), rownames=['True'], colnames=['Predicted'], margins=True)
+table_totals = pd.crosstab(pd.Series(act_scores), pd.Series(dict_scores), rownames=['True'], colnames=['Predicted'],
+                           margins=True)
 pd.options.display.float_format = '{:.2f}'.format
-table_perc = pd.crosstab(pd.Series(act_scores), pd.Series(dict_scores), rownames=['True'], colnames=['Predicted']).apply(lambda r: r/r.sum(), axis=1)
+table_perc = pd.crosstab(pd.Series(act_scores), pd.Series(dict_scores),
+                         rownames=['True'], colnames=['Predicted']).apply(lambda r: r/r.sum(), axis=1)
 print table_totals
 print table_perc
 
-# Compute and plot confusion matrix
+# compute and plot confusion matrix
 cnf_matrix = confusion_matrix(y_true=act_scores, y_pred=dict_scores)
 plt.figure()
 plot_confusion_matrix(cnf_matrix, classes=['Bearish', 'Bullish'], title='Confusion Matrix', normalize=True)
