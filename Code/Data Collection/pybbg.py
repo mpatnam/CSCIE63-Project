@@ -1,4 +1,4 @@
-# Adapted code from github.com/kyuni22/pybbg
+# Adapted code from github.com/kyuni22/pybbg to retrieve intraday prices from Bloomberg
 from __future__ import print_function
 import blpapi
 from collections import defaultdict
