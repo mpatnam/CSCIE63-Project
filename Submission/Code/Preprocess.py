@@ -3,7 +3,6 @@ from nltk.corpus import stopwords
 from nltk.tag.perceptron import PerceptronTagger
 import string
 import re
-import langid
 
 tagger = PerceptronTagger()
 
@@ -62,7 +61,7 @@ def remove_features(data_str):
     return cleaned_str
 
 
-# Process of classifying words into their parts of speech and labeling them accordingly is known as part-of-speech tagging, POS-tagging, or simply tagging. Our emphasis in this chapter is on exploiting tags, and tagging text automatically. http://www.nltk.org/book/ch05.html
+# Process of classifying words into their parts of speech and labeling them accordingly is known as part-of-speech tagging, POS-tagging. Use NLTK to tag text automatically. http://www.nltk.org/book/ch05.html
 def tag_and_remove(data_str):
     cleaned_str = ' '
     # noun tags
@@ -77,7 +76,6 @@ def tag_and_remove(data_str):
     text = data_str.split()
 
     # tag the text and keep only those with the right tags
-    #tagged_text = pos_tag(text)
     tagged_text = tagger.tag(text)
     for tagged_word in tagged_text:
         if tagged_word[1] in nltk_tags:
@@ -86,16 +84,13 @@ def tag_and_remove(data_str):
     return cleaned_str
 
 
-# Tweets are going to use different forms of a word, such as organize, organizes, and organizing. Reduces dimensionality and boosts numerical measures like TFIDF
-# http://nlp.stanford.edu/IR-book/html/htmledition/stemming-and-lemmatization-1.html
-# lemmatization of a single Tweets (cleaned_str/row/document)
+# Tweets are going to use different forms of a word, such as organize, organizes, and organizing. Reduces dimensionality and boosts numerical measures like TFIDF. http://nlp.stanford.edu/IR-book/html/htmledition/stemming-and-lemmatization-1.html lemmatization of a single Tweets (cleaned_str/row/document)
 def lemmatize(data_str):
     # expects a string
     list_pos = 0
     cleaned_str = ''
     lmtzr = WordNetLemmatizer()
     text = data_str.split()
-    #tagged_words = pos_tag(text)
     tagged_words = tagger.tag(text)
     for word in tagged_words:
         if 'v' in word[1].lower():
