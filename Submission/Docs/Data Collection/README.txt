@@ -8,7 +8,7 @@ FB:   https://finance.yahoo.com/quote/FB/history?period1=1488344400&period2=1493
 TWTR: https://finance.yahoo.com/quote/TWTR/history?period1=1488344400&period2=1493524800&interval=1d&filter=history&frequency=1d
 
 Stock tweets (from StockTwits.com)
-Period:  Apr ? to Apr 28th
+Period:  Mar 1st to Apr 30th 2017
 
 AAPL: https://api.stocktwits.com/api/2/streams/symbol/AAPL.json
 TSLA: https://api.stocktwits.com/api/2/streams/symbol/TSLA.json
