@@ -1,12 +1,11 @@
-import pyspark
+# Execute:  pyspark --packages com.databricks:spark-csv_2.10:1.3.0 --master local[*]
+
 from pyspark import SparkContext
 from pyspark.sql import SQLContext
 from pyspark.sql.types import DoubleType, StringType
 from pyspark.sql.functions import udf
 import Preprocess as pp
 from sklearn.model_selection import train_test_split
-
-# pyspark --packages com.databricks:spark-csv_2.10:1.3.0 --master local[*]
 
 ##############################
 ## Load and Preprocess Data ##
@@ -21,7 +20,7 @@ lemmatize_udf = udf(pp.lemmatize, StringType())
 sqlContext = SQLContext(sc)
 
 # Load data - label (0 = Bearish, 1 = Bullish)
-data_df = sqlContext.read.load('file:///home/cloudera/Desktop/AAPL_2mo.csv', 
+data_df = sqlContext.read.load('file:///home/cloudera/Desktop/AAPL_FB_TSLA_2mo.csv', 
                           format='com.databricks.spark.csv', 
                           header='true', 
                           inferSchema='true')
@@ -52,38 +51,43 @@ lemm_df = tagged_df.withColumn("text", lemmatize_udf(tagged_df["tagged_text"]))
 dedup_df = lemm_df.dropDuplicates(['Body', 'label'])
 
 # select only the columns we care about
-cleanData_df = dedup_df.select(dedup_df['ID'], dedup_df['Symbol'], dedup_df['text'], dedup_df['label'])
+cleanData_df = dedup_df.select(dedup_df['ID'], dedup_df['Date'], dedup_df['Symbol'], dedup_df['text'], dedup_df['label'])
 
-# split training & validation sets with 60% to training
-training, test = cleanData_df.randomSplit([0.6, 0.4], seed=1)
+bearishCount = cleanData_df.filter(cleanData_df.label == 0.0).count()
+bullishCount = cleanData_df.filter(cleanData_df.label == 1.0).count()
+print("Total Bearish Tags = %g" % bearishCount)
+print("Total Bullish Tags = %g" % bullishCount)
+
+# split training & validation sets with 70% to training
+training, test = cleanData_df.randomSplit([0.70, 0.30], seed=1)
 
 ######################
 ## Spark ML Section ##
 ######################
 from pyspark.ml.feature import HashingTF, IDF, Tokenizer
 from pyspark.ml import Pipeline
-from pyspark.ml.classification import NaiveBayes, LogisticRegression
+from pyspark.ml.classification import NaiveBayes
 from pyspark.ml.tuning import ParamGridBuilder, CrossValidator
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 
-# Configure an ML pipeline, which consists of tree stages: tokenizer, hashingTF, and nb.
+# Configure an ML pipeline, which consists of three stages: tokenizer, hashingTF, and nb.
 tokenizer = Tokenizer(inputCol="text", outputCol="words")
 hashingTF = HashingTF(inputCol=tokenizer.getOutputCol(), outputCol="features")
 idf = IDF(inputCol="features", outputCol="idf")
-nb = NaiveBayes()
+nb = NaiveBayes(smoothing=1.0, modelType="multinomial")
 pipeline = Pipeline(stages=[tokenizer, hashingTF, idf, nb])
 
-paramGrid = ParamGridBuilder().addGrid(nb.smoothing, [0.0, 1.0]).build()
+paramGrid = ParamGridBuilder().addGrid(nb.smoothing, [0.0, 1.0]).addGrid(hashingTF.numFeatures, [100, 1000, 10000]).build()
 
 cv = CrossValidator(estimator=pipeline, 
                     estimatorParamMaps=paramGrid, 
                     evaluator=MulticlassClassificationEvaluator(), 
                     numFolds=4)
 
-cvModel = cv.fit(training)
+cvModel = cv.fit(training).bestModel
 
 result = cvModel.transform(test)
-prediction_df = result.select("text", "label", "prediction")
+prediction_df = result.select("Date", "text", "label", "probability", "prediction")
 
 bearish_df = prediction_df.filter(prediction_df['label']==0.0)
 bearish_df.show(truncate=False)
@@ -91,12 +95,50 @@ bearish_df.show(truncate=False)
 bullish_df = prediction_df.filter(prediction_df['label']==1.0)
 bullish_df.show(truncate=False)
 
-# obtain evaluator.
+# Compute test error
 evaluator = MulticlassClassificationEvaluator(predictionCol="prediction")
+print("Test Set Accuracy = %g" % evaluator.evaluate(result, {evaluator.metricName: "precision"}))
 
-# compute the classification error on test data.
-accuracy = evaluator.evaluate(result)
-print("Test Set Accuracy = %g" % accuracy)
+
+######################################################
+## Write Output to Compute Aggregate for each Stock ##
+######################################################
+
+# Load full data set for given stock
+data_df = sqlContext.read.load('file:///home/cloudera/Desktop/AAPL_FB_TSLA_2mo.csv', 
+                          format='com.databricks.spark.csv', 
+                          header='true', 
+                          inferSchema='true')
+
+data_df.cache()
+data_df.printSchema()
+
+# remove stop words to reduce dimensionality
+rm_stops_df = data_df.withColumn("stop_text", remove_stops_udf(data_df["Body"]))
+l
+# remove other non essential words, think of it as my personal stop word list
+rm_features_df = rm_stops_df.withColumn("feat_text", remove_features_udf(rm_stops_df["stop_text"]))
+
+# tag the words remaining and keep only Nouns, Verbs and Adjectives
+tagged_df = rm_features_df.withColumn("tagged_text", tag_and_remove_udf(rm_features_df["feat_text"]))
+
+# lemmatization of remaining words to reduce dimensionality & boost measures
+lemm_df = tagged_df.withColumn("text", lemmatize_udf(tagged_df["tagged_text"]))
+
+# dedupe important since alot of the tweets only differed by url's and RT mentions
+dedup_df = lemm_df.dropDuplicates(['Body', 'label'])
+
+# select only the columns we care about
+cleanData_df = dedup_df.select(dedup_df['CreateTime'], dedup_df['Date'], dedup_df['Symbol'], dedup_df['text'], dedup_df['label'])
+
+# Predict on full data set using the trained cross-validated best NB model
+result = cvModel.transform(cleanData_df)
+prediction_df = result.select("CreateTime", "Symbol", "label", "probability", "prediction")
+
+# Write data to csv for post-processing in Excel
+export_path = '/home/cloudera/Desktop/nb_intraday_aggregate.csv'
+prediction_pd = prediction_df.toPandas()
+prediction_pd[["CreateTime", "probability", "Symbol"]].to_csv(export_path, index=False)
 
 
 ###########################
@@ -108,7 +150,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 
 def plot_confusion_matrix(cm, classes,
-                          normalize=False,
+                          normalize=True,
                           title='Confusion matrix',
                           cmap=plt.cm.Blues):
     """
